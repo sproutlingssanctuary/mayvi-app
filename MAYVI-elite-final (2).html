@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MAYVI</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+
+:root {
+  --cream: #fdf9f4;
+  --cream2: #f5efe6;
+  --cream3: #ede5d8;
+  --sage: #4a7c6f;
+  --sage2: #6a9e8f;
+  --sage-light: #e8f2ef;
+  --sage-pale: #f0f7f5;
+  --gold: #b8924a;
+  --gold-pale: #fdf4e7;
+  --ink: #2c2416;
+  --ink2: #4a3f32;
+  --stone: #8a7f72;
+  --stone2: #b5a99a;
+  --border2: rgba(74,124,111,0.12);
+  --white: #ffffff;
+  --shadow: 0 4px 24px rgba(44,36,22,0.08);
+  --shadow2: 0 2px 12px rgba(44,36,22,0.06);
+  --red: #c4562a;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body { width:100%; height:100%; overflow:hidden; font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--ink); }
+#app { width:100%; height:100vh; position:relative; overflow:hidden; background:var(--cream); }
+
+.screen { position:absolute; inset:0; opacity:0; pointer-events:none; transition:opacity 0.3s ease; overflow-y:auto; -webkit-overflow-scrolling:touch; display:flex; flex-direction:column; background:var(--cream); }
+.screen.active { opacity:1; pointer-events:all; }
+
+/* TOAST */
+.toast { position:fixed; bottom:96px; left:50%; transform:translateX(-50%); background:var(--sage); color:#fff; font-size:12px; font-weight:400; padding:12px 24px; border-radius:24px; z-index:9999; opacity:0; transition:opacity 0.3s; white-space:nowrap; pointer-events:none; box-shadow:0 8px 24px rgba(74,124,111,0.3); }
+.toast.show { opacity:1; }
+
+/* LOADER */
+.loader { position:fixed; inset:0; background:rgba(253,249,244,0.92); display:flex; align-items:center; justify-content:center; z-index:9998; opacity:0; pointer-events:none; transition:opacity 0.2s; }
+.loader.show { opacity:1; pointer-events:all; }
+.ldots { display:flex; gap:6px; }
+.ldot { width:8px; height:8px; border-radius:50%; background:var(--sage); animation:ldot 1.2s ease-in-out infinite; }
+.ldot:nth-child(2){animation-delay:.2s} .ldot:nth-child(3){animation-delay:.4s}
+@keyframes ldot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-10px)}}
+
+/* ══ WELCOME ══ */
+#s-welcome {
+  background:linear-gradient(160deg, #fdf9f4 0%, #f0ede6 50%, #e8f2ef 100%);
+  align-items:center; justify-content:center; text-align:center;
+  padding:52px 36px; position:relative; overflow:hidden;
+}
+#s-welcome::before { content:''; position:absolute; top:-100px; right:-100px; width:300px; height:300px; border-radius:50%; background:radial-gradient(circle, rgba(74,124,111,0.08), transparent 70%); }
+#s-welcome::after { content:''; position:absolute; bottom:-80px; left:-80px; width:250px; height:250px; border-radius:50%; background:radial-gradient(circle, rgba(184,146,74,0.08), transparent 70%); }
+
+.w-icon { margin-bottom:24px; position:relative; z-index:1; animation:breathe 4s ease-in-out infinite; }
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+.w-logo { font-family:'Cormorant Garamond',serif; font-size:52px; font-weight:300; color:var(--ink); letter-spacing:12px; margin-bottom:6px; position:relative; z-index:1; }
+.w-rule { width:32px; height:1.5px; background:var(--gold); margin:0 auto 12px; }
+.w-tag { font-size:11px; font-weight:400; letter-spacing:3px; text-transform:uppercase; color:var(--sage); margin-bottom:36px; position:relative; z-index:1; }
+.w-desc { font-family:'Cormorant Garamond',serif; font-size:19px; font-weight:300; font-style:italic; color:var(--stone); line-height:1.75; margin-bottom:40px; max-width:260px; position:relative; z-index:1; }
+.btn-primary { display:block; width:100%; padding:17px; background:var(--sage); color:#fff; font-family:'DM Sans',sans-serif; font-size:12px; font-weight:500; letter-spacing:3px; text-transform:uppercase; cursor:pointer; border:none; border-radius:14px; margin-bottom:12px; transition:all 0.3s; box-shadow:0 8px 24px rgba(74,124,111,0.3); position:relative; z-index:1; }
+.btn-primary:active { transform:scale(0.98); }
+.btn-secondary { display:block; width:100%; padding:14px; background:transparent; border:1.5px solid var(--cream3); color:var(--stone); font-family:'DM Sans',sans-serif; font-size:12px; font-weight:400; letter-spacing:2px; text-transform:uppercase; cursor:pointer; border-radius:12px; position:relative; z-index:1; }
+.w-flags { margin-top:28px; font-size:13px; letter-spacing:4px; position:relative; z-index:1; }
+
+/* ══ PAGE HEAD ══ */
+.page-head { background:linear-gradient(135deg, var(--sage) 0%, var(--sage2) 100%); padding:52px 24px 44px; position:relative; overflow:hidden; flex-shrink:0; }
+.page-head::after { content:''; position:absolute; bottom:-1px; left:0; right:0; height:28px; background:var(--cream); border-radius:28px 28px 0 0; }
+.page-head::before { content:''; position:absolute; top:-60px; right:-60px; width:180px; height:180px; border-radius:50%; background:rgba(255,255,255,0.08); }
+.ph-eyebrow { font-size:10px; font-weight:500; letter-spacing:3px; text-transform:uppercase; color:rgba(255,255,255,0.65); margin-bottom:10px; position:relative; z-index:1; }
+.ph-title { font-family:'Cormorant Garamond',serif; font-size:36px; font-weight:300; color:#fff; line-height:1.2; position:relative; z-index:1; }
+.ph-sub { font-size:12px; font-weight:300; color:rgba(255,255,255,0.6); margin-top:6px; position:relative; z-index:1; }
+.page-body { padding:24px 22px 80px; overflow-y:auto; flex:1; }
+
+/* ══ FORMS ══ */
+.f-group { margin-bottom:20px; }
+.f-label { font-size:11px; font-weight:500; letter-spacing:2px; text-transform:uppercase; color:var(--sage); margin-bottom:10px; display:block; }
+.f-input { width:100%; padding:14px 16px; background:#fff; border:1.5px solid var(--cream3); border-radius:12px; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:300; color:var(--ink); outline:none; transition:border-color 0.3s; box-shadow:var(--shadow2); }
+.f-input:focus { border-color:var(--sage); }
+.f-input::placeholder { color:var(--stone2); }
+
+/* Voice combo — input + wave button */
+.voice-combo { display:flex; gap:8px; align-items:center; }
+.voice-combo .f-input { flex:1; }
+
+/* WAVE BUTTON — unique icon, not a mic */
+.wave-btn { width:46px; height:46px; border-radius:50%; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s; box-shadow:var(--shadow2); background:var(--sage-light); }
+.wave-btn.listening { background:var(--red); animation:wavePulse 1s ease-in-out infinite; }
+.wave-btn:active { transform:scale(0.95); }
+@keyframes wavePulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+
+.age-wrap { display:flex; flex-wrap:wrap; gap:8px; }
+.age-chip { padding:10px 16px; border:1.5px solid var(--cream3); border-radius:24px; font-family:'DM Sans',sans-serif; font-size:12px; font-weight:400; color:var(--stone); cursor:pointer; background:#fff; transition:all 0.2s; box-shadow:var(--shadow2); }
+.age-chip.sel { background:var(--sage); border-color:var(--sage); color:#fff; }
+.tip-card { background:var(--gold-pale); border:1.5px solid rgba(184,146,74,0.2); border-radius:14px; padding:16px 18px; margin:16px 0 20px; font-size:13px; font-weight:300; color:var(--ink2); line-height:1.6; }
+.tip-card strong { color:var(--gold); font-weight:500; }
+
+/* ══ HOME ══ */
+#s-home { background:var(--cream); padding-bottom:80px; }
+.home-head { background:linear-gradient(135deg, var(--sage), var(--sage2)); padding:52px 22px 30px; position:relative; overflow:hidden; flex-shrink:0; }
+.home-head::before { content:''; position:absolute; top:-60px; right:-60px; width:180px; height:180px; border-radius:50%; background:rgba(255,255,255,0.08); }
+.home-head::after { content:''; position:absolute; bottom:-1px; left:0; right:0; height:24px; background:var(--cream); border-radius:24px 24px 0 0; }
+.h-greet { font-size:11px; font-weight:400; letter-spacing:3px; text-transform:uppercase; color:rgba(255,255,255,0.65); margin-bottom:5px; }
+.h-name { font-family:'Cormorant Garamond',serif; font-size:28px; font-weight:300; color:#fff; margin-bottom:4px; }
+.h-name em { font-style:italic; font-weight:400; }
+.h-date { font-size:11px; font-weight:300; color:rgba(255,255,255,0.55); margin-bottom:18px; }
+
+.child-card { background:#fff; border-radius:18px; padding:18px 20px; display:flex; align-items:center; gap:14px; box-shadow:0 8px 32px rgba(44,36,22,0.12); position:relative; z-index:1; }
+.child-av { width:52px; height:52px; border-radius:16px; flex-shrink:0; background:linear-gradient(135deg, var(--sage-light), var(--sage-pale)); border:2px solid rgba(74,124,111,0.2); display:flex; align-items:center; justify-content:center; font-family:'Cormorant Garamond',serif; font-size:24px; font-weight:400; color:var(--sage); }
+.child-nm { font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:400; color:var(--ink); margin-bottom:3px; }
+.child-inf { font-size:12px; font-weight:300; color:var(--stone); }
+.streak-box { margin-left:auto; text-align:center; border-left:1.5px solid var(--cream3); padding-left:16px; }
+.streak-n { font-family:'Cormorant Garamond',serif; font-size:30px; font-weight:300; color:var(--gold); line-height:1; }
+.streak-l { font-size:9px; font-weight:500; color:var(--stone2); letter-spacing:1.5px; text-transform:uppercase; }
+
+.alert-strip { background:linear-gradient(135deg, var(--gold-pale), #fff9f0); border:1.5px solid rgba(184,146,74,0.25); margin:14px 18px 0; border-radius:16px; padding:14px 18px; display:flex; align-items:center; gap:12px; cursor:pointer; box-shadow:var(--shadow2); transition:transform 0.2s; }
+.alert-strip:active { transform:scale(0.98); }
+.a-pulse { width:8px; height:8px; border-radius:50%; background:var(--gold); flex-shrink:0; animation:pulse 2s ease-in-out infinite; }
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.a-t { font-size:13px; font-weight:500; color:var(--ink); margin-bottom:1px; }
+.a-s { font-size:11px; font-weight:300; color:var(--stone); }
+.a-arr { margin-left:auto; color:var(--gold); font-size:20px; }
+
+.h-body { padding:18px; }
+.sec-lbl { font-size:10px; font-weight:500; letter-spacing:2.5px; text-transform:uppercase; color:var(--sage); margin-bottom:12px; margin-top:4px; display:flex; align-items:center; gap:10px; }
+.sec-lbl::after { content:''; flex:1; height:1.5px; background:var(--sage-light); border-radius:1px; }
+
+.qa-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+.qa-card { background:#fff; border-radius:16px; padding:18px 14px; cursor:pointer; transition:all 0.2s; box-shadow:var(--shadow2); border:1.5px solid var(--cream3); }
+.qa-card:active { transform:scale(0.97); }
+.qa-iw { width:40px; height:40px; border-radius:13px; display:flex; align-items:center; justify-content:center; margin-bottom:12px; }
+.qi-sage { background:var(--sage-light); }
+.qi-gold { background:var(--gold-pale); }
+.qi-blush { background:#fdf0ed; }
+.qi-lav { background:#f0f0fd; }
+.qa-l { font-size:13px; font-weight:500; color:var(--ink); margin-bottom:2px; }
+.qa-s { font-size:11px; font-weight:300; color:var(--stone); }
+
+.tl-card { background:#fff; border-radius:16px; padding:18px; box-shadow:var(--shadow2); border:1.5px solid var(--cream3); margin-bottom:14px; }
+.tl-empty { font-size:14px; font-weight:300; color:var(--stone2); text-align:center; padding:20px 0; font-style:italic; line-height:1.7; }
+.tl-entry { display:flex; gap:13px; padding:11px 0; border-bottom:1.5px solid var(--cream2); }
+.tl-entry:last-child { border-bottom:none; padding-bottom:0; }
+.tl-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+.d-sage{background:var(--sage)} .d-gold{background:var(--gold)} .d-red{background:var(--red)}
+.tl-tm { font-size:10px; font-weight:400; color:var(--stone2); margin-bottom:3px; }
+.tl-tx { font-size:13px; font-weight:300; color:var(--ink2); line-height:1.45; }
+.tl-tag { display:inline-block; font-size:9px; font-weight:500; letter-spacing:1.5px; text-transform:uppercase; color:var(--sage); background:var(--sage-light); padding:3px 9px; border-radius:6px; margin-top:5px; }
+
+/* BOTTOM NAV */
+.bnav { position:fixed; bottom:0; left:0; right:0; background:rgba(253,249,244,0.97); backdrop-filter:blur(12px); border-top:1.5px solid var(--cream3); display:flex; padding:10px 0 22px; z-index:999; box-shadow:0 -4px 20px rgba(44,36,22,0.06); }
+.bn { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; border:none; background:none; cursor:pointer; color:var(--stone2); font-family:'DM Sans',sans-serif; transition:color 0.2s; padding:4px 0; }
+.bn.on { color:var(--sage); }
+.bn svg { width:22px; height:22px; }
+.bn-l { font-size:9px; font-weight:500; letter-spacing:1.5px; text-transform:uppercase; }
+
+/* ══ VOICE LOG ══ */
+#s-voice { background:var(--cream); }
+.v-top { background:linear-gradient(135deg, var(--sage), var(--sage2)); padding:52px 22px 22px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; position:relative; }
+.v-top::after { content:''; position:absolute; bottom:-1px; left:0; right:0; height:24px; background:var(--cream); border-radius:24px 24px 0 0; }
+.back-btn { background:rgba(255,255,255,0.2); border:1.5px solid rgba(255,255,255,0.3); color:#fff; font-family:'DM Sans',sans-serif; font-size:11px; font-weight:400; letter-spacing:1.5px; padding:9px 18px; border-radius:24px; cursor:pointer; }
+.v-title { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:300; color:#fff; letter-spacing:2px; }
+.v-body { flex:1; overflow-y:auto; padding:24px 22px 40px; display:flex; flex-direction:column; align-items:center; }
+.v-for { align-self:flex-start; display:flex; align-items:center; gap:10px; margin-bottom:28px; }
+.v-dot-sm { width:7px; height:7px; border-radius:50%; background:var(--gold); }
+.v-lbl { font-size:11px; font-weight:400; letter-spacing:2px; color:var(--stone); text-transform:uppercase; }
+.v-nm { color:var(--sage); font-weight:500; }
+
+/* UNIQUE MIC — wave bars */
+.mic-wrap { display:flex; flex-direction:column; align-items:center; gap:16px; margin-bottom:28px; width:100%; }
+.mic-outer { width:140px; height:140px; border-radius:50%; background:linear-gradient(135deg, var(--sage-light), var(--sage-pale)); border:2px solid rgba(74,124,111,0.2); display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.3s; box-shadow:0 8px 32px rgba(74,124,111,0.15); }
+.mic-outer.rec { background:linear-gradient(135deg, rgba(196,86,42,0.1), rgba(196,86,42,0.05)); border-color:rgba(196,86,42,0.4); animation:micpulse 1.5s ease-in-out infinite; }
+@keyframes micpulse{0%,100%{box-shadow:0 8px 32px rgba(74,124,111,0.15)}50%{box-shadow:0 8px 48px rgba(74,124,111,0.35)}}
+.mic-mid { width:98px; height:98px; border-radius:50%; background:linear-gradient(135deg, var(--sage), var(--sage2)); display:flex; align-items:center; justify-content:center; box-shadow:0 6px 20px rgba(74,124,111,0.4); transition:all 0.3s; }
+.mic-outer.rec .mic-mid { background:linear-gradient(135deg, #c4562a, #e06040); }
+.mic-tm { font-family:'Cormorant Garamond',serif; font-size:30px; font-weight:300; color:var(--sage); letter-spacing:4px; display:none; }
+.mic-tm.show { display:block; }
+.mic-ht { font-size:11px; font-weight:400; letter-spacing:2px; text-transform:uppercase; color:var(--stone); text-align:center; }
+
+.tx-box { width:100%; background:#fff; border:2px solid var(--cream3); border-radius:16px; padding:18px; margin-bottom:16px; transition:border-color 0.3s; box-shadow:var(--shadow2); }
+.tx-box.active { border-color:var(--sage); box-shadow:0 0 0 3px rgba(74,124,111,0.1); }
+.tx-inp { width:100%; min-height:80px; background:transparent; border:none; outline:none; font-family:'Cormorant Garamond',serif; font-size:18px; font-weight:300; color:var(--stone2); font-style:italic; line-height:1.6; resize:none; }
+.tx-box.active .tx-inp { color:var(--ink); font-style:normal; }
+
+.tag-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; width:100%; }
+.vtag { padding:8px 16px; border:1.5px solid var(--cream3); border-radius:24px; font-family:'DM Sans',sans-serif; font-size:11px; font-weight:400; color:var(--stone); cursor:pointer; background:#fff; transition:all 0.2s; box-shadow:var(--shadow2); }
+.vtag.sel { background:var(--sage); border-color:var(--sage); color:#fff; }
+
+.sv-btn { width:100%; padding:17px; background:var(--cream2); border:2px solid var(--cream3); color:var(--stone2); font-family:'DM Sans',sans-serif; font-size:12px; font-weight:500; letter-spacing:3px; text-transform:uppercase; cursor:pointer; border-radius:14px; opacity:0.5; pointer-events:none; transition:all 0.3s; }
+.sv-btn.ready { opacity:1; pointer-events:all; background:var(--sage); border-color:var(--sage); color:#fff; box-shadow:0 8px 24px rgba(74,124,111,0.3); }
+.sv-btn.ready:active { transform:scale(0.98); }
+
+/* ══ REMINDERS ══ */
+#s-reminders { background:var(--cream); padding-bottom:80px; }
+.add-form { background:#fff; border-radius:18px; padding:22px; margin-bottom:20px; box-shadow:var(--shadow2); border:1.5px solid var(--cream3); }
+.add-form-row { display:flex; gap:8px; align-items:center; margin-bottom:12px; }
+.add-form-row input[type=text] { flex:1; padding:13px 16px; background:var(--cream); border:1.5px solid var(--cream3); border-radius:12px; font-family:'DM Sans',sans-serif; font-size:15px; font-weight:300; color:var(--ink); outline:none; }
+.add-form-row input[type=text]:focus { border-color:var(--sage); }
+.add-form-row input[type=text]::placeholder { color:var(--stone2); }
+.add-form input[type=time] { width:100%; padding:12px 16px; background:var(--cream); border:1.5px solid var(--cream3); border-radius:12px; color:var(--ink); font-family:'DM Sans',sans-serif; font-size:14px; font-weight:300; outline:none; margin-bottom:14px; }
+.add-form button { width:100%; padding:15px; background:var(--sage); border:none; color:#fff; font-family:'DM Sans',sans-serif; font-size:12px; font-weight:500; letter-spacing:3px; text-transform:uppercase; cursor:pointer; border-radius:12px; box-shadow:0 6px 20px rgba(74,124,111,0.3); }
+.add-form button:active { transform:scale(0.98); }
+
+.rem-item { background:#fff; border-radius:14px; padding:15px 17px; display:flex; align-items:center; gap:13px; margin-bottom:10px; box-shadow:var(--shadow2); border:1.5px solid var(--cream3); }
+.ri-dot { width:4px; height:32px; border-radius:4px; background:var(--gold); flex-shrink:0; }
+.ri-title { font-size:14px; font-weight:500; color:var(--ink); margin-bottom:2px; }
+.ri-time { font-size:11px; font-weight:300; color:var(--stone); }
+.ri-chk { margin-left:auto; width:28px; height:28px; border-radius:50%; border:2px solid var(--cream3); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:13px; color:transparent; transition:all 0.25s; flex-shrink:0; }
+.ri-chk.done { background:var(--sage); border-color:var(--sage); color:#fff; }
+.ri-empty { font-size:13px; font-weight:300; color:var(--stone2); text-align:center; padding:24px 0; font-style:italic; line-height:1.6; }
+
+/* ══ ALERTS ══ */
+#s-alerts { background:var(--cream); padding-bottom:80px; }
+.al-body { padding:14px 18px; }
+.al-item { background:#fff; border-radius:18px; padding:20px; margin-bottom:14px; box-shadow:var(--shadow2); border:1.5px solid var(--cream3); }
+.al-item.new { border-color:rgba(184,146,74,0.3); background:linear-gradient(135deg, #fff, var(--gold-pale)); }
+.al-badge { font-size:9px; font-weight:600; letter-spacing:2px; text-transform:uppercase; padding:5px 12px; border-radius:8px; display:inline-block; margin-bottom:12px; }
+.al-badge.new { background:rgba(184,146,74,0.15); color:var(--gold); }
+.al-badge.old { background:var(--cream2); color:var(--stone); }
+.al-title { font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:400; color:var(--ink); margin-bottom:8px; line-height:1.2; }
+.al-body-txt { font-size:13px; font-weight:300; color:var(--stone); line-height:1.6; margin-bottom:13px; }
+.al-chips { display:flex; gap:7px; flex-wrap:wrap; }
+.al-chip { font-size:10px; font-weight:400; letter-spacing:1px; color:var(--stone); border:1.5px solid var(--cream3); padding:5px 12px; border-radius:8px; background:#fff; }
+.al-tip { margin-top:14px; padding:12px 14px; background:var(--sage-light); border-radius:10px; border-left:3px solid var(--sage); font-size:12px; font-weight:400; color:var(--sage); line-height:1.6; }
+
+/* ══ CHAT ══ */
+#s-chat { background:var(--cream); display:flex; flex-direction:column; }
+.chat-hd { background:linear-gradient(135deg, var(--sage), var(--sage2)); padding:52px 18px 16px; display:flex; align-items:center; gap:12px; flex-shrink:0; position:relative; }
+.chat-hd::after { content:''; position:absolute; bottom:-1px; left:0; right:0; height:20px; background:var(--cream); border-radius:20px 20px 0 0; }
+.chat-av { width:42px; height:42px; border-radius:14px; background:rgba(255,255,255,0.2); border:1.5px solid rgba(255,255,255,0.3); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.chat-n { font-family:'Cormorant Garamond',serif; font-size:20px; font-weight:400; color:#fff; }
+.chat-s { font-size:10px; font-weight:400; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,0.65); }
+.chat-p { margin-left:auto; font-size:9px; font-weight:500; letter-spacing:2px; text-transform:uppercase; color:rgba(255,255,255,0.7); background:rgba(255,255,255,0.15); padding:5px 12px; border-radius:8px; }
+
+.chat-msgs { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:16px; display:flex; flex-direction:column; gap:12px; padding-bottom:150px; }
+.msg { max-width:84%; display:flex; flex-direction:column; }
+.msg.ai { align-self:flex-start; }
+.msg.me { align-self:flex-end; }
+.bubble { padding:13px 16px; font-size:14px; font-weight:300; line-height:1.55; border-radius:18px; }
+.ai .bubble { background:#fff; border:1.5px solid var(--cream3); color:var(--ink); border-bottom-left-radius:6px; box-shadow:var(--shadow2); }
+.me .bubble { background:var(--sage); color:#fff; border-bottom-right-radius:6px; }
+.msg-t { font-size:10px; font-weight:400; color:var(--stone2); margin-top:4px; padding:0 4px; }
+.me .msg-t { text-align:right; }
+
+.typing-bbl { padding:13px 16px; background:#fff; border:1.5px solid var(--cream3); border-radius:18px; border-bottom-left-radius:6px; display:flex; align-items:center; gap:5px; width:58px; box-shadow:var(--shadow2); }
+.typing-bbl span { width:7px; height:7px; border-radius:50%; background:var(--stone2); animation:typ 1.2s ease-in-out infinite; }
+.typing-bbl span:nth-child(2){animation-delay:.2s} .typing-bbl span:nth-child(3){animation-delay:.4s}
+@keyframes typ{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+
+.sugg-row { position:fixed; bottom:70px; left:0; right:0; padding:8px 14px; display:flex; flex-wrap:nowrap; gap:8px; overflow-x:auto; background:rgba(253,249,244,0.97); backdrop-filter:blur(8px); border-top:1.5px solid var(--cream3); z-index:99; -webkit-overflow-scrolling:touch; }
+.sugg { background:#fff; border:1.5px solid var(--cream3); border-radius:24px; padding:8px 16px; font-size:11px; font-weight:400; color:var(--ink2); cursor:pointer; white-space:nowrap; flex-shrink:0; box-shadow:var(--shadow2); }
+.sugg:active { background:var(--sage); color:#fff; border-color:var(--sage); }
+
+.chat-bar { position:fixed; bottom:0; left:0; right:0; padding:10px 14px 24px; background:rgba(253,249,244,0.97); backdrop-filter:blur(12px); border-top:1.5px solid var(--cream3); display:flex; gap:8px; align-items:center; z-index:100; }
+.chat-in { flex:1; padding:12px 18px; border-radius:24px; border:1.5px solid var(--cream3); background:#fff; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:300; color:var(--ink); outline:none; transition:border-color 0.2s; box-shadow:var(--shadow2); }
+.chat-in:focus { border-color:var(--sage); }
+.chat-in::placeholder { color:var(--stone2); }
+.chat-wave-btn { width:44px; height:44px; border-radius:50%; background:var(--sage-light); border:1.5px solid var(--border2); cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.2s; }
+.chat-wave-btn.on { background:var(--red); border-color:var(--red); animation:wavePulse 1s ease-in-out infinite; }
+.chat-snd { width:44px; height:44px; border-radius:50%; background:var(--sage); border:none; color:#fff; font-size:20px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 4px 16px rgba(74,124,111,0.3); }
+
+/* ══ SAVED ══ */
+#s-saved { background:linear-gradient(160deg, var(--cream) 0%, var(--sage-pale) 100%); align-items:center; justify-content:center; text-align:center; padding:60px 30px; }
+.sv-ring { width:72px; height:72px; border-radius:50%; background:linear-gradient(135deg, var(--sage), var(--sage2)); display:flex; align-items:center; justify-content:center; margin:0 auto 24px; animation:popin 0.5s cubic-bezier(0.175,0.885,0.32,1.275); box-shadow:0 12px 36px rgba(74,124,111,0.4); }
+@keyframes popin{0%{transform:scale(0);opacity:0}100%{transform:scale(1);opacity:1}}
+.sv-check { font-size:28px; color:#fff; }
+.sv-title { font-family:'Cormorant Garamond',serif; font-size:36px; font-weight:300; color:var(--ink); margin-bottom:8px; }
+.sv-sub { font-size:11px; font-weight:400; letter-spacing:2px; text-transform:uppercase; color:var(--stone); margin-bottom:28px; }
+.sv-entry { background:#fff; border:1.5px solid var(--cream3); border-radius:16px; padding:18px; margin-bottom:14px; width:100%; font-family:'Cormorant Garamond',serif; font-size:17px; font-weight:300; font-style:italic; color:var(--stone); line-height:1.6; text-align:left; box-shadow:var(--shadow2); }
+.sv-insight { background:var(--gold-pale); border:1.5px solid rgba(184,146,74,0.2); border-radius:16px; padding:16px 18px; margin-bottom:32px; width:100%; font-size:13px; font-weight:300; color:var(--ink2); line-height:1.6; text-align:left; }
+.sv-insight strong { color:var(--gold); font-weight:500; }
+.btn-return { width:100%; padding:17px; background:#fff; border:1.5px solid var(--cream3); color:var(--stone); font-family:'DM Sans',sans-serif; font-size:12px; font-weight:500; letter-spacing:3px; text-transform:uppercase; cursor:pointer; border-radius:14px; box-shadow:var(--shadow2); }
+.btn-return:active { background:var(--sage); color:#fff; border-color:var(--sage); }
+</style>
+</head>
+<body>
+<div id="app">
+
+<div class="toast" id="toast"></div>
+<div class="loader" id="loader"><div class="ldots"><div class="ldot"></div><div class="ldot"></div><div class="ldot"></div></div></div>
+
+<!-- ══ WELCOME ══ -->
+<div class="screen active" id="s-welcome">
+  <div class="w-icon">
+    <svg viewBox="0 0 90 90" width="90" height="90" fill="none">
+      <circle cx="45" cy="45" r="42" fill="white" opacity="0.7"/>
+      <circle cx="45" cy="45" r="42" stroke="#4a7c6f" stroke-width="1.5" opacity="0.2"/>
+      <circle cx="45" cy="45" r="30" fill="#4a7c6f" opacity="0.04"/>
+      <line x1="30" y1="66" x2="30" y2="44" stroke="#4a7c6f" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+      <line x1="45" y1="66" x2="45" y2="28" stroke="#4a7c6f" stroke-width="3" stroke-linecap="round"/>
+      <line x1="60" y1="66" x2="60" y2="44" stroke="#4a7c6f" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+      <line x1="30" y1="50" x2="60" y2="50" stroke="#b8924a" stroke-width="1.2" opacity="0.5"/>
+      <line x1="22" y1="66" x2="68" y2="66" stroke="#4a7c6f" stroke-width="1.5" opacity="0.2"/>
+      <circle cx="45" cy="25" r="6" fill="#b8924a"/>
+      <circle cx="45" cy="25" r="10" fill="#b8924a" opacity="0.15"/>
+    </svg>
+  </div>
+  <div class="w-logo">MAYVI</div>
+  <div class="w-rule"></div>
+  <div class="w-tag">A Mother's Eye on Life</div>
+  <div class="w-desc">Where every moment of your child's life is remembered, celebrated, and never missed.</div>
+  <button class="btn-primary" onclick="go('s-setup')">Begin Your Journey</button>
+  <button class="btn-secondary" onclick="loadExisting()">I already have an account</button>
+  <div class="w-flags">🇮🇳 &nbsp;·&nbsp; 🇨🇦</div>
+</div>
+
+<!-- ══ SETUP ══ -->
+<div class="screen" id="s-setup">
+  <div class="page-head">
+    <div class="ph-eyebrow">Step One — Your Family</div>
+    <div class="ph-title">Tell me about<br>your little one</div>
+    <div class="ph-sub">Speak or type — whatever feels natural 🎤</div>
+  </div>
+  <div class="page-body">
+    <div class="f-group">
+      <label class="f-label">Your Name</label>
+      <div class="voice-combo">
+        <input class="f-input" type="text" id="parentInp" placeholder="Type or tap wave to speak"/>
+        <button class="wave-btn" id="waveP" onclick="voiceField('parentInp','waveP')">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <rect x="2" y="9" width="3" height="6" rx="1.5" fill="#4a7c6f"/>
+            <rect x="6.5" y="5" width="3" height="14" rx="1.5" fill="#4a7c6f"/>
+            <rect x="11" y="2" width="3" height="20" rx="1.5" fill="#4a7c6f"/>
+            <rect x="15.5" y="5" width="3" height="14" rx="1.5" fill="#4a7c6f"/>
+            <rect x="20" y="9" width="2.5" height="6" rx="1.25" fill="#4a7c6f" opacity="0.6"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="f-group">
+      <label class="f-label">Child's Name</label>
+      <div class="voice-combo">
+        <input class="f-input" type="text" id="childInp" placeholder="Type or tap wave to speak"/>
+        <button class="wave-btn" id="waveC" onclick="voiceField('childInp','waveC')">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <rect x="2" y="9" width="3" height="6" rx="1.5" fill="#4a7c6f"/>
+            <rect x="6.5" y="5" width="3" height="14" rx="1.5" fill="#4a7c6f"/>
+            <rect x="11" y="2" width="3" height="20" rx="1.5" fill="#4a7c6f"/>
+            <rect x="15.5" y="5" width="3" height="14" rx="1.5" fill="#4a7c6f"/>
+            <rect x="20" y="9" width="2.5" height="6" rx="1.25" fill="#4a7c6f" opacity="0.6"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div class="f-group">
+      <label class="f-label" style="margin-bottom:14px">Child's Age</label>
+      <div class="age-wrap">
+        <div class="age-chip" onclick="pickAge(this)">0–6 mo</div>
+        <div class="age-chip" onclick="pickAge(this)">6–12 mo</div>
+        <div class="age-chip" onclick="pickAge(this)">1–2 yrs</div>
+        <div class="age-chip sel" onclick="pickAge(this)">2–4 yrs</div>
+        <div class="age-chip" onclick="pickAge(this)">4–6 yrs</div>
+        <div class="age-chip" onclick="pickAge(this)">6+ yrs</div>
+      </div>
+    </div>
+    <div class="tip-card">💡 <strong>Partner tip:</strong> Use the same child name — your partner sees the same timeline instantly. No invite needed.</div>
+    <button class="btn-primary" onclick="finishSetup()">Continue</button>
+  </div>
+</div>
+
+<!-- ══ HOME ══ -->
+<div class="screen" id="s-home">
+  <div class="home-head">
+    <div class="h-greet" id="greet">Good Morning</div>
+    <div class="h-name">Welcome, <em id="pName">there</em></div>
+    <div class="h-date" id="hDate"></div>
+    <div class="child-card">
+      <div class="child-av" id="cInit">?</div>
+      <div>
+        <div class="child-nm" id="cName">Your Child</div>
+        <div class="child-inf" id="cInfo">0 moments today</div>
+      </div>
+      <div class="streak-box">
+        <div class="streak-n" id="sNum">1</div>
+        <div class="streak-l">Day Streak</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert-strip" onclick="go('s-alerts')">
+    <div class="a-pulse"></div>
+    <div><div class="a-t">Community Alert</div><div class="a-s">MAYVI found something for your child</div></div>
+    <div class="a-arr">›</div>
+  </div>
+
+  <div class="h-body">
+    <div class="sec-lbl">Quick Actions</div>
+    <div class="qa-grid">
+      <div class="qa-card" onclick="go('s-voice')">
+        <div class="qa-iw qi-sage">
+          <!-- Sound wave bars -->
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <rect x="2" y="9" width="3" height="6" rx="1.5" fill="#4a7c6f"/>
+            <rect x="7" y="5" width="3" height="14" rx="1.5" fill="#4a7c6f"/>
+            <rect x="12" y="2" width="3" height="20" rx="1.5" fill="#4a7c6f"/>
+            <rect x="17" y="5" width="3" height="14" rx="1.5" fill="#4a7c6f" opacity="0.7"/>
+            <rect x="21" y="9" width="2" height="6" rx="1" fill="#4a7c6f" opacity="0.4"/>
+          </svg>
+        </div>
+        <div class="qa-l">Voice Log</div>
+        <div class="qa-s">Speak naturally</div>
+      </div>
+      <div class="qa-card" onclick="go('s-chat')">
+        <div class="qa-iw qi-gold">
+          <!-- Constellation orb -->
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="4" fill="#b8924a" opacity="0.9"/>
+            <circle cx="12" cy="12" r="8" stroke="#b8924a" stroke-width="1" opacity="0.3"/>
+            <line x1="12" y1="2" x2="12" y2="6" stroke="#b8924a" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="12" y1="18" x2="12" y2="22" stroke="#b8924a" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="2" y1="12" x2="6" y2="12" stroke="#b8924a" stroke-width="1.5" stroke-linecap="round"/>
+            <line x1="18" y1="12" x2="22" y2="12" stroke="#b8924a" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="qa-l">Ask MAYVI</div>
+        <div class="qa-s">Speak or type</div>
+      </div>
+      <div class="qa-card" onclick="go('s-reminders');loadRems()">
+        <div class="qa-iw qi-blush">
+          <!-- Dewdrop -->
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M12 3C12 3 5 10 5 15C5 18.87 8.13 22 12 22C15.87 22 19 18.87 19 15C19 10 12 3 12 3Z" fill="#c4562a" opacity="0.15" stroke="#c4562a" stroke-width="1.5" stroke-linejoin="round"/>
+            <circle cx="15" cy="11" r="2" fill="#c4562a" opacity="0.4"/>
+          </svg>
+        </div>
+        <div class="qa-l">Reminders</div>
+        <div class="qa-s">Speak to add</div>
+      </div>
+      <div class="qa-card" onclick="go('s-alerts')">
+        <div class="qa-iw qi-lav">
+          <!-- Lightning in circle -->
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="9" stroke="#6464c4" stroke-width="1.5" opacity="0.4"/>
+            <path d="M13 4L7 13H12L11 20L17 11H12L13 4Z" fill="#6464c4" opacity="0.7"/>
+          </svg>
+        </div>
+        <div class="qa-l">Alerts</div>
+        <div class="qa-s">Local activities</div>
+      </div>
+    </div>
+
+    <div class="sec-lbl">Today's Moments</div>
+    <div class="tl-card" id="tl">
+      <div class="tl-empty">No moments logged yet today.<br>Tap <strong>Voice Log</strong> to speak your first one 🌸</div>
+    </div>
+  </div>
+
+  <div class="bnav">
+    <button class="bn on" onclick="go('s-home');loadTL()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12L12 4L21 12V21H15V16C15 14.9 14.1 14 13 14H11C9.9 14 9 14.9 9 16V21H3V12Z"/></svg>
+      <span class="bn-l">Home</span>
+    </button>
+    <button class="bn" onclick="go('s-voice')">
+      <svg viewBox="0 0 24 24" fill="none">
+        <rect x="2" y="9" width="3" height="6" rx="1.5" fill="currentColor"/>
+        <rect x="7" y="5" width="3" height="14" rx="1.5" fill="currentColor"/>
+        <rect x="12" y="2" width="3" height="20" rx="1.5" fill="currentColor"/>
+        <rect x="17" y="5" width="3" height="14" rx="1.5" fill="currentColor" opacity="0.7"/>
+      </svg>
+      <span class="bn-l">Log</span>
+    </button>
+    <button class="bn" onclick="go('s-reminders');loadRems()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 3C12 3 5 10 5 15C5 18.87 8.13 22 12 22C15.87 22 19 18.87 19 15C19 10 12 3 12 3Z"/></svg>
+      <span class="bn-l">Remind</span>
+    </button>
+    <button class="bn" onclick="go('s-chat')">
+      <svg viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="4" fill="currentColor" opacity="0.8"/>
+        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" opacity="0.5"/>
+        <line x1="12" y1="1" x2="12" y2="5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        <line x1="12" y1="19" x2="12" y2="23" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span class="bn-l">MAYVI</span>
+    </button>
+  </div>
+</div>
+
+<!-- ══ VOICE LOG ══ -->
+<div class="screen" id="s-voice">
+  <div class="v-top">
+    <button class="back-btn" onclick="go('s-home')">← Back</button>
+    <div class="v-title">Voice Log</div>
+    <div style="width:70px"></div>
+  </div>
+  <div class="v-body">
+    <div class="v-for">
+      <div class="v-dot-sm"></div>
+      <div class="v-lbl">Logging for <span class="v-nm" id="vChild">your child</span></div>
+    </div>
+    <div class="mic-wrap">
+      <div class="mic-outer" id="micO" onclick="toggleRec()">
+        <div class="mic-mid">
+          <!-- Wave bars inside mic button -->
+          <svg width="46" height="46" viewBox="0 0 46 46" fill="none">
+            <rect x="7" y="18" width="5" height="10" rx="2.5" fill="white" opacity="0.7"/>
+            <rect x="14" y="12" width="5" height="22" rx="2.5" fill="white" opacity="0.85"/>
+            <rect x="21" y="6" width="5" height="34" rx="2.5" fill="white"/>
+            <rect x="28" y="12" width="5" height="22" rx="2.5" fill="white" opacity="0.7"/>
+            <rect x="35" y="18" width="4" height="10" rx="2" fill="white" opacity="0.45"/>
+          </svg>
+        </div>
+      </div>
+      <div class="mic-tm" id="micTm">0:00</div>
+      <div class="mic-ht" id="micHt">Tap to begin speaking</div>
+    </div>
+    <div class="tx-box" id="txBox">
+      <textarea class="tx-inp" id="txInp" rows="4" placeholder="Your words appear here as you speak...&#10;You can also type here directly."></textarea>
+    </div>
+    <div class="tag-row">
+      <div class="vtag" onclick="this.classList.toggle('sel')">Health</div>
+      <div class="vtag sel" onclick="this.classList.toggle('sel')">Sleep</div>
+      <div class="vtag" onclick="this.classList.toggle('sel')">Food</div>
+      <div class="vtag" onclick="this.classList.toggle('sel')">Mood</div>
+      <div class="vtag" onclick="this.classList.toggle('sel')">Play</div>
+    </div>
+    <button class="sv-btn" id="svBtn" onclick="saveLog()">Save to Timeline</button>
+  </div>
+</div>
+
+<!-- ══ REMINDERS ══ -->
+<div class="screen" id="s-reminders">
+  <div class="page-head">
+    <div class="ph-eyebrow">Your Family</div>
+    <div class="ph-title">Reminders</div>
+    <div class="ph-sub">Tap the wave button to speak a reminder 🎤</div>
+  </div>
+  <div class="page-body">
+    <div class="add-form">
+      <div class="add-form-row">
+        <input type="text" id="rTitle" placeholder="e.g. Vitamin D drops..."/>
+        <button class="wave-btn" id="waveR" onclick="voiceField('rTitle','waveR')">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <rect x="2" y="9" width="3" height="6" rx="1.5" fill="#4a7c6f"/>
+            <rect x="6.5" y="5" width="3" height="14" rx="1.5" fill="#4a7c6f"/>
+            <rect x="11" y="2" width="3" height="20" rx="1.5" fill="#4a7c6f"/>
+            <rect x="15.5" y="5" width="3" height="14" rx="1.5" fill="#4a7c6f"/>
+            <rect x="20" y="9" width="2.5" height="6" rx="1.25" fill="#4a7c6f" opacity="0.6"/>
+          </svg>
+        </button>
+      </div>
+      <input type="time" id="rTime" value="08:00"/>
+      <button onclick="addRem()">Add Reminder</button>
+    </div>
+    <div id="remList"><div class="ri-empty">No reminders yet.<br>Speak or type one above 🔔</div></div>
+  </div>
+  <div class="bnav">
+    <button class="bn" onclick="go('s-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12L12 4L21 12V21H15V16C15 14.9 14.1 14 13 14H11C9.9 14 9 14.9 9 16V21H3V12Z"/></svg><span class="bn-l">Home</span></button>
+    <button class="bn" onclick="go('s-voice')"><svg viewBox="0 0 24 24" fill="none"><rect x="2" y="9" width="3" height="6" rx="1.5" fill="currentColor"/><rect x="7" y="5" width="3" height="14" rx="1.5" fill="currentColor"/><rect x="12" y="2" width="3" height="20" rx="1.5" fill="currentColor"/></svg><span class="bn-l">Log</span></button>
+    <button class="bn on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 3C12 3 5 10 5 15C5 18.87 8.13 22 12 22C15.87 22 19 18.87 19 15C19 10 12 3 12 3Z"/></svg><span class="bn-l">Remind</span></button>
+    <button class="bn" onclick="go('s-chat')"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" fill="currentColor" opacity="0.8"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" opacity="0.5"/></svg><span class="bn-l">MAYVI</span></button>
+  </div>
+</div>
+
+<!-- ══ ALERTS ══ -->
+<div class="screen" id="s-alerts">
+  <div class="page-head">
+    <div class="ph-title">Community<br>Alerts</div>
+    <div class="ph-sub">MAYVI is watching Prince Rupert for you</div>
+  </div>
+  <div class="al-body">
+    <div class="al-item new">
+      <div class="al-badge new">New · 4 min ago</div>
+      <div class="al-title">Soccer Registration Open</div>
+      <div class="al-body-txt">Prince Rupert Community League just posted Spring soccer registration for ages 3–5. Your child qualifies and spots are limited.</div>
+      <div class="al-chips"><span class="al-chip">Spring 2026</span><span class="al-chip">$45/season</span><span class="al-chip">Ages 3–5</span></div>
+      <div class="al-tip">💡 MAYVI noticed this 4 minutes after posting — you are among the first to know.</div>
+    </div>
+    <div class="al-item">
+      <div class="al-badge old">2 days ago</div>
+      <div class="al-title">Art Workshop — New Session</div>
+      <div class="al-body-txt">Prince Rupert Arts Centre starting creative art sessions for toddlers on Saturdays.</div>
+      <div class="al-chips"><span class="al-chip">Saturdays</span><span class="al-chip">$30/month</span><span class="al-chip">Ages 2–5</span></div>
+    </div>
+    <div class="al-item">
+      <div class="al-badge old">1 week ago</div>
+      <div class="al-title">Swimming — Watching for Next Opening</div>
+      <div class="al-body-txt">This season is full. MAYVI will alert you the moment registration opens again. You will never miss it.</div>
+      <div class="al-chips"><span class="al-chip">Watching now</span></div>
+    </div>
+  </div>
+  <div class="bnav">
+    <button class="bn" onclick="go('s-home')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12L12 4L21 12V21H15V16C15 14.9 14.1 14 13 14H11C9.9 14 9 14.9 9 16V21H3V12Z"/></svg><span class="bn-l">Home</span></button>
+    <button class="bn" onclick="go('s-voice')"><svg viewBox="0 0 24 24" fill="none"><rect x="2" y="9" width="3" height="6" rx="1.5" fill="currentColor"/><rect x="7" y="5" width="3" height="14" rx="1.5" fill="currentColor"/><rect x="12" y="2" width="3" height="20" rx="1.5" fill="currentColor"/></svg><span class="bn-l">Log</span></button>
+    <button class="bn" onclick="go('s-reminders');loadRems()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 3C12 3 5 10 5 15C5 18.87 8.13 22 12 22C15.87 22 19 18.87 19 15C19 10 12 3 12 3Z"/></svg><span class="bn-l">Remind</span></button>
+    <button class="bn on"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" fill="currentColor" opacity="0.8"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" opacity="0.5"/><line x1="12" y1="1" x2="12" y2="5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span class="bn-l">Alerts</span></button>
+  </div>
+</div>
+
+<!-- ══ CHAT ══ -->
+<div class="screen" id="s-chat">
+  <div class="chat-hd">
+    <button class="back-btn" onclick="go('s-home')">← Back</button>
+    <div class="chat-av">
+      <svg viewBox="0 0 46 46" width="26" height="26" fill="none">
+        <rect x="7" y="18" width="5" height="10" rx="2.5" fill="white" opacity="0.6"/>
+        <rect x="14" y="12" width="5" height="22" rx="2.5" fill="white" opacity="0.8"/>
+        <rect x="21" y="6" width="5" height="34" rx="2.5" fill="white"/>
+        <rect x="28" y="12" width="5" height="22" rx="2.5" fill="white" opacity="0.7"/>
+        <rect x="35" y="18" width="4" height="10" rx="2" fill="white" opacity="0.4"/>
+      </svg>
+    </div>
+    <div>
+      <div class="chat-n">MAYVI</div>
+      <div class="chat-s">Speak or type — Always Here</div>
+    </div>
+    <div class="chat-p">Claude AI</div>
+  </div>
+
+  <div class="chat-msgs" id="chatMsgs">
+    <div class="msg ai">
+      <div class="bubble">Hello! 🌸 I am MAYVI — your parenting companion. You can speak to me using the wave button, or just type. What is on your mind today?</div>
+      <div class="msg-t">MAYVI · now</div>
+    </div>
+  </div>
+
+  <div class="sugg-row">
+    <div class="sugg" onclick="sendMsg('Why is my toddler fussy before naps?')">Fussy before naps</div>
+    <div class="sugg" onclick="sendMsg('Healthy meal ideas for my child')">Meal ideas</div>
+    <div class="sugg" onclick="sendMsg('I feel overwhelmed today')">I need support</div>
+    <div class="sugg" onclick="sendMsg('Give me a daily plan for my child')">Daily plan</div>
+    <div class="sugg" onclick="sendMsg('When should my child start swimming?')">Swimming age</div>
+  </div>
+
+  <div class="chat-bar">
+    <button class="chat-wave-btn" id="chatWave" onclick="toggleChatVoice()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <rect x="2" y="9" width="3" height="6" rx="1.5" fill="#4a7c6f"/>
+        <rect x="6.5" y="5" width="3" height="14" rx="1.5" fill="#4a7c6f"/>
+        <rect x="11" y="2" width="3" height="20" rx="1.5" fill="#4a7c6f"/>
+        <rect x="15.5" y="5" width="3" height="14" rx="1.5" fill="#4a7c6f"/>
+        <rect x="20" y="9" width="2.5" height="6" rx="1.25" fill="#4a7c6f" opacity="0.6"/>
+      </svg>
+    </button>
+    <input class="chat-in" id="chatIn" type="text" placeholder="Speak 🎤 or type here..."/>
+    <button class="chat-snd" onclick="sendChat()">›</button>
+  </div>
+</div>
+
+<!-- ══ SAVED ══ -->
+<div class="screen" id="s-saved">
+  <div class="sv-ring"><span class="sv-check">✓</span></div>
+  <div class="sv-title">Moment Saved</div>
+  <div class="sv-sub">Added to your child's story</div>
+  <div class="sv-entry" id="svEntry"></div>
+  <div class="sv-insight" id="svInsight"></div>
+  <button class="btn-return" onclick="go('s-home');loadTL()">Return Home</button>
+</div>
+
+</div>
+<script>
+// ══ SUPABASE ══
+const SB='https://xprdadbpovoxqpzytzml.supabase.co';
+const SK='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwcmRhZGJwb3ZveHFwenl0em1sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4OTY0NjYsImV4cCI6MjA5MjQ3MjQ2Nn0.atsSOeNVn6DH2zYduUl1A4md68Eo3H7hjTuITQ911dg';
+const SH={'Content-Type':'application/json','apikey':SK,'Authorization':'Bearer '+SK,'Prefer':'return=representation'};
+const db={
+  async get(t,q=''){const r=await fetch(`${SB}/rest/v1/${t}?${q}`,{headers:SH});return r.json();},
+  async post(t,d){const r=await fetch(`${SB}/rest/v1/${t}`,{method:'POST',headers:SH,body:JSON.stringify(d)});return r.json();},
+  async patch(t,id,d){await fetch(`${SB}/rest/v1/${t}?id=eq.${id}`,{method:'PATCH',headers:SH,body:JSON.stringify(d)});}
+};
+
+const S={p:localStorage.getItem('mp')||'',c:localStorage.getItem('mc')||'',a:localStorage.getItem('ma')||'2–4 yrs',streak:parseInt(localStorage.getItem('ms'))||1};
+
+function toast(m,dur=2500){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur);}
+function load(on){document.getElementById('loader').classList[on?'add':'remove']('show');}
+function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));const el=document.getElementById(id);el.classList.add('active');el.scrollTop=0;}
+
+// ══ CLOCK ══
+(function(){
+  const n=new Date(),h=n.getHours();
+  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('greet').textContent=h<12?'Good Morning':h<17?'Good Afternoon':'Good Evening';
+  document.getElementById('hDate').textContent=days[n.getDay()]+', '+n.getDate()+' '+months[n.getMonth()];
+})();
+
+// ══ SETUP ══
+function pickAge(el){document.querySelectorAll('.age-chip').forEach(c=>c.classList.remove('sel'));el.classList.add('sel');S.a=el.textContent;}
+
+function finishSetup(){
+  const p=document.getElementById('parentInp').value.trim();
+  const c=document.getElementById('childInp').value.trim();
+  if(!c){toast('Please enter your child\'s name 🌸');return;}
+  S.p=p||'Parent';S.c=c;
+  localStorage.setItem('mp',S.p);localStorage.setItem('mc',S.c);localStorage.setItem('ma',S.a);
+  updateUI();go('s-home');loadTL();
+}
+
+function loadExisting(){
+  if(S.c){updateUI();go('s-home');loadTL();}
+  else{toast('Welcome back! Please set up your profile first.');go('s-setup');}
+}
+
+function updateUI(){
+  if(!S.c)return;
+  document.getElementById('cName').textContent=S.c;
+  document.getElementById('cInit').textContent=S.c.charAt(0).toUpperCase();
+  document.getElementById('vChild').textContent=S.c;
+  document.getElementById('pName').textContent=S.p||'there';
+  document.getElementById('sNum').textContent=S.streak;
+}
+
+if(S.c){updateUI();go('s-home');loadTL();}
+
+// ══ VOICE INPUT FOR TEXT FIELDS ══
+function voiceField(fieldId,btnId){
+  const field=document.getElementById(fieldId);
+  const btn=document.getElementById(btnId);
+  if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){
+    toast('Voice not available on this browser. Please type.');
+    return;
+  }
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  const sr=new SR();
+  sr.lang='en-CA';sr.interimResults=false;sr.maxAlternatives=1;
+  btn.classList.add('listening');
+  toast('Listening... speak now 🎤',3000);
+  sr.onresult=(e)=>{field.value=e.results[0][0].transcript;btn.classList.remove('listening');toast('Got it ✓');};
+  sr.onerror=()=>{btn.classList.remove('listening');toast('Could not hear. Please try again or type.');};
+  sr.onend=()=>btn.classList.remove('listening');
+  sr.start();
+}
+
+// ══ TIMELINE ══
+async function loadTL(){
+  const tl=document.getElementById('tl');
+  if(!S.c){tl.innerHTML='<div class="tl-empty">Set up your profile to start logging 🌸</div>';return;}
+  tl.innerHTML='<div class="tl-empty">Loading your moments...</div>';
+  try{
+    const today=new Date().toISOString().split('T')[0];
+    const data=await db.get('logs',`child_name=eq.${encodeURIComponent(S.c)}&created_at=gte.${today}&order=created_at.desc`);
+    if(!data||!data.length){
+      tl.innerHTML='<div class="tl-empty">No moments logged today yet.<br>Tap <strong>Voice Log</strong> to speak your first one 🌸</div>';
+      document.getElementById('cInfo').textContent='0 moments today';
+      return;
+    }
+    document.getElementById('cInfo').textContent=data.length+' moment'+(data.length!==1?'s':'')+' today';
+    tl.innerHTML='';
+    data.forEach(log=>{
+      const dt=new Date(log.created_at);
+      const tm=dt.getHours()+':'+(dt.getMinutes().toString().padStart(2,'0'))+' '+(dt.getHours()>=12?'PM':'AM');
+      const div=document.createElement('div');div.className='tl-entry';
+      div.innerHTML=`<div class="tl-dot d-sage"></div><div style="flex:1"><div class="tl-tm">${tm} · ${log.logged_by||'You'}</div><div class="tl-tx">${log.text.substring(0,100)}${log.text.length>100?'...':''}</div><span class="tl-tag">${log.category||'Voice Log'}</span></div>`;
+      tl.appendChild(div);
+    });
+  }catch(e){tl.innerHTML='<div class="tl-empty">Could not load. Check your connection.</div>';}
+}
+
+// ══ REMINDERS ══
+async function loadRems(){
+  const list=document.getElementById('remList');
+  if(!S.c){list.innerHTML='<div class="ri-empty">Set up your profile first 🌸</div>';return;}
+  list.innerHTML='<div class="ri-empty">Loading reminders...</div>';
+  try{
+    const data=await db.get('reminders',`child_name=eq.${encodeURIComponent(S.c)}&order=created_at.asc`);
+    if(!data||!data.length){list.innerHTML='<div class="ri-empty">No reminders yet.<br>Speak or type one above 🔔</div>';return;}
+    list.innerHTML='';
+    data.forEach(r=>{
+      const div=document.createElement('div');div.className='rem-item';
+      div.innerHTML=`<div class="ri-dot"></div><div style="flex:1"><div class="ri-title">${r.title}</div><div class="ri-time">${r.time||'No time set'}</div></div><div class="ri-chk ${r.completed?'done':''}" onclick="toggleRem('${r.id}',this)">${r.completed?'✓':''}</div>`;
+      list.appendChild(div);
+    });
+  }catch(e){list.innerHTML='<div class="ri-empty">Could not load reminders.</div>';}
+}
+
+async function toggleRem(id,el){
+  el.classList.toggle('done');el.textContent=el.classList.contains('done')?'✓':'';
+  await db.patch('reminders',id,{completed:el.classList.contains('done')});
+}
+
+async function addRem(){
+  const title=document.getElementById('rTitle').value.trim();
+  const time=document.getElementById('rTime').value;
+  if(!title){toast('Please speak or type a reminder first 🎤');return;}
+  if(!S.c){toast('Please set up your profile first');return;}
+  load(true);
+  try{
+    await db.post('reminders',{child_name:S.c,title,time,completed:false});
+    document.getElementById('rTitle').value='';
+    document.getElementById('rTime').value='08:00';
+    toast('Reminder saved ✓');loadRems();
+  }catch(e){toast('Could not save. Check connection.');}
+  load(false);
+}
+
+// ══ VOICE LOG ══
+let isRec=false,recT=null,recSecs=0;
+function toggleRec(){isRec?stopRec():startRec();}
+
+function startRec(){
+  isRec=true;recSecs=0;
+  document.getElementById('micO').classList.add('rec');
+  document.getElementById('micTm').classList.add('show');
+  document.getElementById('micHt').textContent='Recording — tap to stop';
+  document.getElementById('txBox').classList.add('active');
+  document.getElementById('txInp').value='';
+  document.getElementById('svBtn').classList.remove('ready');
+  recT=setInterval(()=>{recSecs++;const m=Math.floor(recSecs/60),s=(recSecs%60).toString().padStart(2,'0');document.getElementById('micTm').textContent=m+':'+s;},1000);
+  if('webkitSpeechRecognition' in window||'SpeechRecognition' in window){
+    const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    window._sr=new SR();window._sr.continuous=true;window._sr.interimResults=true;window._sr.lang='en-CA';
+    window._sr.onresult=(e)=>{
+      let f='',i='';
+      for(let j=e.resultIndex;j<e.results.length;j++){if(e.results[j].isFinal)f+=e.results[j][0].transcript;else i+=e.results[j][0].transcript;}
+      document.getElementById('txInp').value=f+(i?' '+i:'');
+      if(f.length>3)document.getElementById('svBtn').classList.add('ready');
+    };
+    window._sr.onerror=()=>{toast('Could not hear. You can type instead.');};
+    window._sr.start();
+  }else{toast('Voice not supported. Please type your log.');}
+}
+
+function stopRec(){
+  isRec=false;clearInterval(recT);
+  if(window._sr){try{window._sr.stop();}catch(e){}}
+  document.getElementById('micO').classList.remove('rec');
+  document.getElementById('micTm').classList.remove('show');
+  document.getElementById('micHt').textContent='Tap to speak again';
+  const val=document.getElementById('txInp').value;
+  if(val.length>3)document.getElementById('svBtn').classList.add('ready');
+}
+
+// Allow typing too
+document.getElementById('txInp').addEventListener('input',function(){
+  if(this.value.length>3)document.getElementById('svBtn').classList.add('ready');
+  else document.getElementById('svBtn').classList.remove('ready');
+  document.getElementById('txBox').classList.toggle('active',this.value.length>0);
+});
+
+async function saveLog(){
+  const text=document.getElementById('txInp').value.trim();
+  if(!text||text.length<3)return;
+  if(!S.c){toast('Please set up your profile first');return;}
+  const cats=[...document.querySelectorAll('.vtag.sel')].map(t=>t.textContent).join(', ')||'General';
+  load(true);
+  try{
+    await db.post('logs',{child_name:S.c,text,category:cats,logged_by:S.p||'Parent'});
+    S.streak++;localStorage.setItem('ms',S.streak);document.getElementById('sNum').textContent=S.streak;
+    document.getElementById('svEntry').textContent='"'+text.substring(0,120)+(text.length>120?'...':'')+'"';
+    const ins=[
+      '<strong>MAYVI noticed:</strong> You are logging consistently — a beautiful habit is forming 🌸',
+      '<strong>MAYVI noticed:</strong> '+S.c+' seems most settled in the mornings based on your logs.',
+      '<strong>MAYVI tip:</strong> Your partner sees this instantly by using the same child name.'
+    ];
+    document.getElementById('svInsight').innerHTML=ins[Math.floor(Math.random()*ins.length)];
+    document.getElementById('txInp').value='';
+    document.getElementById('txBox').classList.remove('active');
+    document.getElementById('svBtn').classList.remove('ready');
+    toast('Saved ✓');go('s-saved');
+  }catch(e){toast('Could not save. Check connection.');}
+  load(false);
+}
+
+// ══ CHAT VOICE INPUT ══
+let chatVoiceOn=false;
+function toggleChatVoice(){
+  const btn=document.getElementById('chatWave');
+  const inp=document.getElementById('chatIn');
+  if(chatVoiceOn){if(window._chatSR){try{window._chatSR.stop();}catch(e){}}chatVoiceOn=false;btn.classList.remove('on');return;}
+  if(!('webkitSpeechRecognition' in window||'SpeechRecognition' in window)){toast('Voice not available. Please type.');return;}
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  window._chatSR=new SR();window._chatSR.lang='en-CA';window._chatSR.interimResults=false;
+  chatVoiceOn=true;btn.classList.add('on');
+  toast('Listening... ask MAYVI anything 🎤',3000);
+  window._chatSR.onresult=(e)=>{
+    const text=e.results[0][0].transcript;
+    inp.value=text;chatVoiceOn=false;btn.classList.remove('on');
+    toast('Sending to MAYVI...');setTimeout(()=>sendChat(),600);
+  };
+  window._chatSR.onerror=()=>{chatVoiceOn=false;btn.classList.remove('on');toast('Could not hear. Please try again or type.');};
+  window._chatSR.onend=()=>{chatVoiceOn=false;btn.classList.remove('on');};
+  window._chatSR.start();
+}
+
+// ══ AI CHAT ══
+const SYS=`You are MAYVI, a warm and wise AI parenting companion. Speak with warmth and care. Keep responses to 2-3 sentences — clear, simple, practical. Be reassuring. You are built for mothers in smaller Canadian communities who may not have family support nearby. Never diagnose medically. The child's name is ${S.c||'the child'}. Research shows parents most need help with: missing activity registrations, evening overwhelm, no nearby family support, partner communication, meal planning and daily routines.`;
+let chatH=[];
+
+async function sendMsg(text){
+  const msgs=document.getElementById('chatMsgs');
+  document.getElementById('chatIn').value='';
+  const ud=document.createElement('div');ud.className='msg me';
+  ud.innerHTML=`<div class="bubble">${text}</div><div class="msg-t">You · now</div>`;
+  msgs.appendChild(ud);
+  const td=document.createElement('div');td.className='msg ai';
+  td.innerHTML=`<div class="typing-bbl"><span></span><span></span><span></span></div>`;
+  msgs.appendChild(td);msgs.scrollTop=msgs.scrollHeight;
+  chatH.push({role:'user',content:text});
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:SYS,messages:chatH})});
+    const d=await r.json();
+    const reply=d.content?.[0]?.text||fbReply(text);
+    chatH.push({role:'assistant',content:reply});td.remove();
+    const ad=document.createElement('div');ad.className='msg ai';
+    ad.innerHTML=`<div class="bubble">${reply}</div><div class="msg-t">MAYVI · now</div>`;
+    msgs.appendChild(ad);
+  }catch(e){
+    const reply=fbReply(text);chatH.push({role:'assistant',content:reply});td.remove();
+    const ad=document.createElement('div');ad.className='msg ai';
+    ad.innerHTML=`<div class="bubble">${reply}</div><div class="msg-t">MAYVI · now</div>`;
+    msgs.appendChild(ad);
+  }
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+function fbReply(text){
+  const n=S.c||'your child',t=text.toLowerCase();
+  if(t.includes('fussy')||t.includes('nap')||t.includes('sleep'))return`Fussiness before naps often means ${n} is overtired — try moving nap time 20 minutes earlier and creating a calm wind-down routine with soft music or a story. You are doing beautifully noticing these patterns 💛`;
+  if(t.includes('meal')||t.includes('eat')||t.includes('food')||t.includes('nutrition'))return`For toddlers, offer 3 meals and 2 small snacks daily with protein, colourful vegetables and whole grains. If ${n} refuses something new, try again in a week — it takes many exposures before a child accepts a new food.`;
+  if(t.includes('plan')||t.includes('day')||t.includes('schedule')||t.includes('routine'))return`A simple daily rhythm works beautifully — morning play and meals, a midday rest, afternoon activity outdoors, and a calm evening routine before bed. Consistency is the kindest thing you can give ${n} right now.`;
+  if(t.includes('overwhelm')||t.includes('tired')||t.includes('support')||t.includes('hard'))return`What you are feeling is completely real and valid. Carrying so much with such love as you do is remarkable. Take one small moment today that is just for you — even five quiet minutes matters 💛`;
+  if(t.includes('swim')||t.includes('register')||t.includes('class')||t.includes('activit'))return`MAYVI is watching Prince Rupert community pages for you — the moment swimming or any activity registration opens, you will be one of the first to know. No more missing out.`;
+  return`Every child is beautifully unique, and you know ${n} better than anyone. Trust your instincts — they have brought you this far. I am always here whenever you need me 💛`;
+}
+
+function sendChat(){
+  const inp=document.getElementById('chatIn');
+  const text=inp.value.trim();
+  if(!text)return;inp.value='';sendMsg(text);
+}
+document.getElementById('chatIn').addEventListener('keypress',e=>{if(e.key==='Enter')sendChat();});
+</script>
+</body>
+</html>
